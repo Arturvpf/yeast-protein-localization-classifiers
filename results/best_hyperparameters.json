@@ -1,0 +1,94 @@
+{
+  "DecisionTree": {
+    "display_name": "Árvore de Decisão",
+    "best_cv_f1_macro": 0.492474,
+    "best_params": {
+      "ccp_alpha": 0.0,
+      "class_weight": "balanced",
+      "criterion": "entropy",
+      "max_depth": 5,
+      "min_samples_leaf": 1,
+      "min_samples_split": 2
+    },
+    "test_metrics": {
+      "accuracy": 0.533632,
+      "precision_macro": 0.517092,
+      "recall_macro": 0.551838,
+      "f1_macro": 0.530086,
+      "precision_weighted": 0.535013,
+      "recall_weighted": 0.533632,
+      "f1_weighted": 0.529168
+    }
+  },
+  "GaussianNB": {
+    "display_name": "Bayesiano Ingênuo",
+    "best_cv_f1_macro": 0.492908,
+    "best_params": {
+      "var_smoothing": 0.310675990983383
+    },
+    "test_metrics": {
+      "accuracy": 0.591928,
+      "precision_macro": 0.524861,
+      "recall_macro": 0.564078,
+      "f1_macro": 0.507998,
+      "precision_weighted": 0.592208,
+      "recall_weighted": 0.591928,
+      "f1_weighted": 0.579943
+    }
+  },
+  "LogisticRegression": {
+    "display_name": "Regressão Logística",
+    "best_cv_f1_macro": 0.521815,
+    "best_params": {
+      "C": 100.0,
+      "class_weight": null,
+      "solver": "lbfgs"
+    },
+    "test_metrics": {
+      "accuracy": 0.596413,
+      "precision_macro": 0.577292,
+      "recall_macro": 0.571034,
+      "f1_macro": 0.559385,
+      "precision_weighted": 0.593266,
+      "recall_weighted": 0.596413,
+      "f1_weighted": 0.583557
+    }
+  },
+  "KNN": {
+    "display_name": "k-Vizinhos (Euclidiano)",
+    "best_cv_f1_macro": 0.566655,
+    "best_params": {
+      "n_neighbors": 11,
+      "weights": "distance"
+    },
+    "test_metrics": {
+      "accuracy": 0.59417,
+      "precision_macro": 0.603642,
+      "recall_macro": 0.577857,
+      "f1_macro": 0.583042,
+      "precision_weighted": 0.584338,
+      "recall_weighted": 0.59417,
+      "f1_weighted": 0.583638
+    }
+  },
+  "RandomForest": {
+    "display_name": "Random Forest",
+    "best_cv_f1_macro": 0.557406,
+    "best_params": {
+      "class_weight": "balanced",
+      "max_depth": 12,
+      "min_samples_leaf": 1,
+      "min_samples_split": 2,
+      "n_estimators": 200
+    },
+    "test_metrics": {
+      "accuracy": 0.621076,
+      "precision_macro": 0.617884,
+      "recall_macro": 0.612056,
+      "f1_macro": 0.60975,
+      "precision_weighted": 0.610782,
+      "recall_weighted": 0.621076,
+      "f1_weighted": 0.611473
+    }
+  }
+}

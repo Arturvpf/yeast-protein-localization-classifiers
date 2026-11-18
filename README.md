@@ -1,87 +1,139 @@
 # Yeast Protein Localization Classifiers
 
-Comparative study of five supervised classification algorithms applied to the UCI *Yeast* dataset, aiming to predict the cellular localization site of yeast proteins from biochemical and sequence-recognition features.
+Comparative study of five supervised machine learning classifiers applied to the UCI **Yeast** dataset to predict the subcellular localization site of *Saccharomyces cerevisiae* proteins from biochemical and sequence-recognition features.
 
-This project was developed for the Machine Learning course (2025.2) at CIn/UFPE under Prof. Francisco de A. T. de Carvalho.
+Developed for the **Machine Learning** course (2025.2) at Centro de Informática, Universidade Federal de Pernambuco (**CIn/UFPE**), advised by Prof. Francisco de A. T. de Carvalho.
 
-## Problem
+---
 
-The Yeast dataset contains 1,484 protein samples described by 8 continuous predictive attributes. Each protein belongs to one of ten cellular localization classes (e.g., CYT, NUC, MIT, ME3). The task is a multi-class classification with a strongly imbalanced class distribution, which is one of the central challenges addressed throughout the project.
+## Problem & Dataset
 
-## Dataset
+The UCI Yeast dataset contains **1,484 protein instances** described by **8 continuous/binary predictive features** with zero missing values. Each protein belongs to one of **10 subcellular localization classes**, exhibiting severe class imbalance (`92.6 : 1` ratio between `CYT` with 463 samples and `ERL` with only 5 samples).
 
-- **Source:** UCI Machine Learning Repository — Yeast Dataset, donated by Paul Horton and created by Kenta Nakai.
-- **Reference:** https://archive.ics.uci.edu/dataset/110/yeast
-- **Samples:** 1,484
-- **Features (8):** `mcg`, `gvh`, `alm`, `mit`, `erl`, `pox`, `vac`, `nuc`
-- **Target:** `site` — cellular localization class
-- A local copy of the dataset is included under `data/yeast-datasets.zip`.
+- **Source:** [UCI Machine Learning Repository — Yeast (Dataset #110)](https://archive.ics.uci.edu/dataset/110/yeast) (created by Kenta Nakai, donated by Paul Horton)
+- **Predictive Features (8):** `mcg`, `gvh`, `alm`, `mit`, `erl`, `pox`, `vac`, `nuc`
+- **Target (`class_protein`, 10 classes):** `CYT` (463), `NUC` (429), `MIT` (244), `ME3` (163), `ME2` (51), `ME1` (44), `EXC` (35), `VAC` (30), `POX` (20), `ERL` (5)
 
-## Methodology
+![Class Distribution](results/figures/01_class_distribution.png)
 
-The experimental pipeline follows the project specification:
+---
 
-1. **Exploratory analysis** — univariate distributions, bivariate correlations, class imbalance assessment.
-2. **Preprocessing** — label encoding of the target variable and standardization of the predictors via `StandardScaler`.
-3. **Stratified split** — 70% training/validation and 30% test, preserving class proportions.
-4. **Model training** — five classifiers are trained:
-   - Decision Tree
-   - Gaussian Naive Bayes
-   - Logistic Regression
-   - k-Nearest Neighbors (Euclidean distance, `k` chosen via cross-validation)
-   - Random Forest
-5. **Hyperparameter tuning** — `GridSearchCV` with stratified k-fold cross-validation. The test set is never used during tuning.
-6. **Evaluation** — precision, recall, F1-score, and per-class classification reports.
-7. **Learning curves** — each best-tuned classifier is evaluated across training/test proportions from (5%, 95%) to (95%, 5%) in 5% steps, using stratified sampling.
+## Experimental Methodology
 
-## Summary of Results
+The pipeline follows a strict, leakage-free experimental protocol aligned with the [course project specification](docs/project-brief.pdf):
 
-| Classifier          | Test Accuracy |
-|---------------------|---------------|
-| Decision Tree       | 54%           |
-| Naive Bayes         | 12%           |
-| Logistic Regression | 58%           |
-| k-Nearest Neighbors | 56%           |
-| Random Forest       | best overall  |
+1. **Exploratory Data Analysis (EDA):** Class imbalance assessment, univariate feature distributions with KDE, per-class boxplots across all 8 predictors, and Pearson correlation analysis (`mcg` vs. `gvh`, $r = 0.58$).
+2. **Stratified Hold-Out Split (70% / 30%):** 1,038 samples for training + cross-validation and 446 strictly held-out test samples (`stratify=y, random_state=42`). The test set is never used during scaling or hyperparameter tuning.
+3. **Leakage-Free Preprocessing & Cross-Validation:** Feature standardization (`StandardScaler`) is encapsulated inside a `scikit-learn` `Pipeline` together with each classifier and tuned via `GridSearchCV` (`scoring='f1_macro'`) using 3-fold `StratifiedKFold` (ensuring all 10 classes, including `ERL` with 3 training samples, appear in every validation fold).
+4. **Five Supervised Classifiers Compared (Baseline vs. Tuned):**
+   - **Decision Tree** (`DecisionTreeClassifier`)
+   - **Gaussian Naive Bayes** (`GaussianNB`, tuning variance regularization `var_smoothing`)
+   - **Multinomial Logistic Regression** (`LogisticRegression`)
+   - **k-Nearest Neighbors** (`KNeighborsClassifier` with **Euclidean distance**, $k$ and distance weighting selected via validation)
+   - **Random Forest** (`RandomForestClassifier`)
+5. **Multi-Metric Evaluation:** Precision, Recall, and F1-Score (Macro and Weighted) alongside global Accuracy and per-class confusion matrices on the 30% test set.
+6. **Stratified Learning Curves `(5%, 95%)` to `(95%, 5%)`:** Each best-tuned pipeline is evaluated across complementary `(train, test)` stratified splits from `(5%, 95%)` to `(95%, 5%)` of the full dataset in **5% increments** (19 proportions × 5 stratified repeats), computing Precision, Recall, and F1-Score on both training and test partitions.
 
-Random Forest achieved the best and most stable performance. Naive Bayes performed poorly, which is consistent with the violation of the conditional independence assumption for this dataset. Class imbalance affected every model and is the dominant factor limiting overall accuracy.
+---
+
+## Summary of Results (30% Held-Out Test Set, $N = 446$)
+
+| Classifier | Selected Hyperparameters (CV) | CV F1-Macro | Test Accuracy | Precision (Macro) | Recall (Macro) | F1-Score (Macro) | F1-Score (Weighted) |
+| :--- | :--- | :---: | :---: | :---: | :---: | :---: | :---: |
+| **Decision Tree** | `entropy`, `max_depth=5`, `class_weight='balanced'` | 0.4925 | 53.36% | 0.5171 | 0.5518 | 0.5301 | 0.5292 |
+| **Gaussian Naive Bayes** | `var_smoothing=0.3107` | 0.4929 | 59.19% | 0.5249 | 0.5641 | 0.5080 | 0.5799 |
+| **Logistic Regression** | `C=100.0`, `solver='lbfgs'` | 0.5218 | 59.64% | 0.5773 | 0.5710 | 0.5594 | 0.5836 |
+| **k-Nearest Neighbors** | `metric='euclidean'`, `k=11`, `weights='distance'` | 0.5667 | 59.42% | 0.6036 | 0.5779 | 0.5830 | 0.5836 |
+| **Random Forest** | `n_estimators=200`, `max_depth=12`, `class_weight='balanced'` | 0.5574 | **62.11%** | **0.6179** | **0.6121** | **0.6097** | **0.6115** |
+
+### Key Findings
+- **Random Forest** achieved the strongest overall performance across every metric (**62.11% accuracy**, **0.6179 macro precision**, **0.6121 macro recall**, and **0.6097 macro F1**), improving macro F1 by **+8.6 pp** over its untuned baseline (`0.5237`).
+- **Euclidean k-NN ($k = 11$, distance-weighted)** ranked second in macro F1 (**0.5830**) and macro precision (**0.6036**), preventing rare classes such as `ERL` from being outvoted in larger neighborhoods.
+- **Tuning `var_smoothing` rescued Gaussian Naive Bayes:** With default `var_smoothing=1e-9`, near-constant sparse features (`erl`, `pox`) have zero within-class sample variance in minority classes, producing degenerate Gaussian density spikes that collapse accuracy to **13.68%** (12.1% on pre-scaled inputs). Cross-validated variance smoothing (`var_smoothing ≈ 0.31`) lifted test accuracy to **59.19%** (+45.5 pp) and macro F1 from `0.2990` to `0.5080`.
+- **Dominant Error Mode:** Confusion matrices show that residual misclassifications across all five models stem primarily from biochemical overlap between cytosolic (`CYT`) and nuclear (`NUC`) proteins, as well as the ambiguous vacuolar (`VAC`) class.
+
+![Baseline vs Tuned Comparison](results/figures/06_baseline_vs_tuned.png)
+
+![Learning Curves Comparison](results/figures/11_learning_curves_comparison.png)
+
+---
 
 ## Repository Layout
 
-```
+```text
 .
-├── README.md
-├── .gitignore
+├── README.md                              # Project overview, methodology, and results
+├── requirements.txt                       # Python dependencies
+├── run_experiments.py                     # Reproducible CLI pipeline (generates CSV/JSON + PNG figures)
+├── data/
+│   ├── yeast.data                         # Extracted UCI Yeast dataset (1,484 samples)
+│   ├── yeast.names                        # Original UCI metadata and attribute descriptions
+│   └── yeast-datasets.zip                 # Archived copy of the dataset
+├── src/
+│   ├── __init__.py
+│   ├── data.py                            # Portable dataset loader and stratified split utilities
+│   ├── models.py                          # Baseline & Pipeline+GridSearchCV definitions for all 5 models
+│   ├── evaluation.py                      # Multi-class metrics & (5%,95%)..(95%,5%) learning curves
+│   └── plotting.py                        # High-resolution Matplotlib/Seaborn visualizations
 ├── notebooks/
-│   └── yeast_classification.ipynb   # Full experimental pipeline
+│   └── yeast_classification.ipynb         # Self-contained, executed Jupyter Notebook (local & Colab ready)
+├── results/
+│   ├── baseline_vs_tuned_metrics.csv      # Baseline vs. tuned evaluation summary
+│   ├── per_class_metrics.csv              # Per-class precision, recall, F1, and support
+│   ├── knn_validation_curve.csv           # Cross-validation scores across k for Euclidean k-NN
+│   ├── learning_curves_metrics.csv        # Train & test metrics from (5%,95%) to (95%,5%)
+│   ├── best_hyperparameters.json          # Selected hyperparameters and test scores
+│   └── figures/                           # Exported publication-ready charts (PNG)
 ├── docs/
-│   ├── project-brief.pdf            # Original course assignment
-│   └── presentation.pdf             # Final presentation slides
-└── data/
-    └── yeast-datasets.zip           # Local copy of the Yeast dataset
+│   ├── relatorio.md                       # Complete technical report (in Portuguese)
+│   ├── project-brief.pdf                  # Original CIn/UFPE course assignment
+│   └── presentation.pdf                   # Course presentation slides
+└── tests/
+    └── test_pipeline.py                   # Automated pytest verification suite
 ```
+
+---
 
 ## How to Run
 
-The notebook runs on Python 3.10+ with the scientific Python stack:
+### 1. Install Dependencies
+Requires Python 3.10+:
 
 ```bash
-pip install numpy pandas scikit-learn matplotlib seaborn plotly jupyter
+pip install -r requirements.txt
+```
+
+### 2. Run the Reproducible Experimental Pipeline (CLI)
+Regenerates all CSV/JSON tables and high-resolution figures under `results/`:
+
+```bash
+python run_experiments.py
+```
+
+### 3. Explore or Run the Jupyter Notebook
+The notebook automatically resolves `data/yeast.data` (or `data/yeast-datasets.zip`) both locally and in Google Colab without manual path edits:
+
+```bash
 jupyter notebook notebooks/yeast_classification.ipynb
 ```
 
-The notebook expects the dataset to be available locally. If running outside Google Colab, extract `data/yeast-datasets.zip` and adjust the data-loading cell accordingly.
+### 4. Run Automated Tests
+```bash
+pytest -v
+```
+
+---
 
 ## Authors
 
 - Andreywid Yago Lima de Souza
-- Artur Vinicius Pereira Fernandes
+- Artur Vinícius Pereira Fernandes
 - Heitor Higino Holanda Cordeiro
 - Arthur Thierre Dos Santos Silva
 
-Centro de Informatica (CIn), Universidade Federal de Pernambuco (UFPE).
+Centro de Informática (CIn), Universidade Federal de Pernambuco (UFPE).
 
 ## References
 
-- Horton, P. and Nakai, K. *A Probabilistic Classification System for Predicting the Cellular Localization Sites of Proteins.* UCI Machine Learning Repository.
-- Pedregosa et al. *Scikit-learn: Machine Learning in Python*, JMLR 12, 2011.
+- Horton, P. & Nakai, K. (1996). *A Probabilistic Classification System for Predicting the Cellular Localization Sites of Proteins.* Intelligent Systems in Molecular Biology (ISMB), 109–115. UCI Machine Learning Repository.
+- Pedregosa, F. et al. (2011). *Scikit-learn: Machine Learning in Python.* Journal of Machine Learning Research, 12, 2825–2830.
